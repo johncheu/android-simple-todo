@@ -1,10 +1,12 @@
-package com.example.john.simpletodo;
+package com.example.john.simpletodo.ui.editscreen;
 
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.EditText;
+
+import com.example.john.simpletodo.R;
 
 public class EditItemActivity extends AppCompatActivity {
 
@@ -21,13 +23,13 @@ public class EditItemActivity extends AppCompatActivity {
         editItemIndex = getIntent().getIntExtra("itemIndex", -1);
 
         etEditItem = (EditText)findViewById(R.id.etEditItem);
-        etEditItem.setText(getIntent().getStringExtra("itemText"));
+        etEditItem.setText(getIntent().getStringExtra("itemDescription"));
     }
 
     public void onSaveItem(View view) {
         Intent data = new Intent();
         data.putExtra("itemIndex", editItemIndex);
-        data.putExtra("itemText", etEditItem.getText().toString());
+        data.putExtra("itemDescription", etEditItem.getText().toString());
         setResult(RESULT_OK, data);
         finish();
     }

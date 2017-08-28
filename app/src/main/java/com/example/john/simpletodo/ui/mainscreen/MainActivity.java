@@ -1,4 +1,4 @@
-package com.example.john.simpletodo;
+package com.example.john.simpletodo.ui.mainscreen;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -9,10 +9,11 @@ import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ListView;
 
-import org.apache.commons.io.FileUtils;
+import com.example.john.simpletodo.R;
+import com.example.john.simpletodo.database.TodoItem;
+import com.example.john.simpletodo.ui.editscreen.EditItemActivity;
+import com.raizlabs.android.dbflow.sql.language.SQLite;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
@@ -22,8 +23,8 @@ public class MainActivity extends AppCompatActivity {
     //endregion
 
     //region VARIABLES
-    private ArrayList<String> todoItems;
-    private ArrayAdapter<String> todoAdapter;
+    private ArrayList<TodoItem> todoItems;
+    private ArrayAdapter<TodoItem> todoAdapter;
     private ListView lvItems;
     private EditText etNewItem;
     //endregion
@@ -41,9 +42,8 @@ public class MainActivity extends AppCompatActivity {
                 new AdapterView.OnItemLongClickListener() {
                     @Override
                     public boolean onItemLongClick(AdapterView<?> adapterView, View view, int i, long l) {
-                        todoItems.remove(i);
-                        onTodoItemsChanged();
-                        return false;
+                        DeleteItem(i);
+                        return true;
                     }
                 }
         );
@@ -62,44 +62,69 @@ public class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode == RESULT_OK && requestCode == REQUEST_EDIT) {
             int itemIndex = data.getExtras().getInt("itemIndex", -1);
-            String itemText = data.getExtras().getString("itemText");
-            if (itemIndex > -1)
-            {
-                todoItems.set(itemIndex, itemText);
-                onTodoItemsChanged();
+            String itemDescription = data.getExtras().getString("itemDescription");
+            if (itemIndex > -1) {
+                EditItem(itemIndex, itemDescription);
             }
         }
     }
 
+    //region EVENT HANDLERS
     public void onAddItem(View view) {
         String itemText = etNewItem.getText().toString();
         if (!itemText.isEmpty()) {
-            todoAdapter.add(itemText);
+            AddItem(itemText);
             etNewItem.setText("");
-            saveItems();
         }
     }
+    //endregion
 
     //region HELPER METHODS
-    private void onTodoItemsChanged() {
-        todoAdapter.notifyDataSetChanged();
-        saveItems();
-    }
-
     private void populateTodoItems() {
-        loadItems();
+        todoItems = new ArrayList<>(SQLite.select().
+                from(TodoItem.class).
+                queryList()
+        );
         todoAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, todoItems);
     }
 
     private void launchEditView(int itemIndex) {
         Intent editIntent = new Intent(MainActivity.this, EditItemActivity.class);
+        TodoItem todoItem = todoAdapter.getItem(itemIndex);
         editIntent.putExtra("itemIndex", itemIndex);
-        editIntent.putExtra("itemText", todoAdapter.getItem(itemIndex));
+        editIntent.putExtra("itemDescription", todoItem.description);
         startActivityForResult(editIntent, REQUEST_EDIT);
+    }
+
+    private void AddItem(String description)
+    {
+        TodoItem todoItem = new TodoItem();
+        todoItem.description = description;
+        todoItem.save();
+
+        todoAdapter.add(todoItem);
+    }
+
+    private void EditItem(int index, String description)
+    {
+        TodoItem todoItem = todoAdapter.getItem(index);
+        todoItem.description = description;
+        todoItem.save();
+
+        todoAdapter.notifyDataSetChanged();
+    }
+
+    private void DeleteItem(int index)
+    {
+        TodoItem todoItem = todoAdapter.getItem(index);
+        todoItem.delete();
+
+        todoAdapter.remove(todoItem);
     }
     //endregion
 
-    //region SAVE LOAD
+    //region FILE SAVE LOAD
+    /*
     private void loadItems() {
         File filesDir = getFilesDir();
         File todoFile = new File(filesDir, "todo.txt");
@@ -119,6 +144,7 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
     }
+    */
     //endregion
 
 }
